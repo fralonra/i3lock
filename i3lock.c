@@ -81,6 +81,11 @@ bool tile = false;
 bool ignore_empty_password = false;
 bool skip_repeated_empty_password = false;
 
+/* zoron */
+typedef enum { Bl_On, Bl_Off } backlight_t;
+bool backlight_on = false;
+xcb_randr_output_t *output = NULL;
+
 /* isutf, u8_dec © 2005 Jeff Bezanson, public domain */
 #define isutf(c) (((c)&0xC0) != 0x80)
 
@@ -264,6 +269,8 @@ static void input_done(void) {
         pam_setcred(pam_handle, PAM_REFRESH_CRED);
         pam_end(pam_handle, PAM_SUCCESS);
 
+        /* zoron */
+        backlight_set();
         exit(0);
     }
 
@@ -778,6 +785,25 @@ static void raise_loop(xcb_window_t window) {
     }
 }
 
+/* zoron */
+void backlight_set() {
+    xcb_generic_error_t *error;
+	xcb_randr_get_screen_resources_current_cookie_t resources_cookie;
+    xcb_randr_get_screen_resources_current_reply_t *resources_reply;
+
+	resources_cookie = xcb_randr_get_screen_resources_current(conn, screen->root);
+    resources_reply = xcb_randr_get_screen_resources_current_reply(conn, resources_cookie, &error);
+
+    output = xcb_randr_get_screen_resources_current(conn, resources_reply);
+    if (backlight_on)
+        xcb_backlight_set(conn, &output, 0);
+    else {
+        xcb_backlight_set(conn, &output, 100);
+        backlight_on = true;
+    }
+    free(resources_reply);
+}
+
 int main(int argc, char *argv[]) {
     struct passwd *pw;
     char *username;
@@ -1005,6 +1031,9 @@ int main(int argc, char *argv[]) {
      * we should get all key presses/releases due to having grabbed the
      * keyboard. */
     (void)load_keymap();
+
+    /* zoron */
+    backlight_set();
 
     /* Initialize the libev event loop. */
     main_loop = EV_DEFAULT;
