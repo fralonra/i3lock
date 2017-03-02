@@ -1,7 +1,7 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
- * © 2010 Michael Stapelberg
+ * 漏 2010 Michael Stapelberg
  *
  * xcb.c: contains all functions which use XCB to talk to X11. Mostly wrappers
  *        around the rather complicated/ugly parts of the XCB API.
@@ -22,6 +22,9 @@
 
 #include "cursors.h"
 #include "unlock_indicator.h"
+
+/* zoron */
+#include <xcb/randr.h>
 
 extern pam_state_t pam_state;
 
@@ -306,4 +309,13 @@ xcb_cursor_t create_cursor(xcb_connection_t *conn, xcb_screen_t *screen, xcb_win
     xcb_free_pixmap(conn, mask);
 
     return cursor;
+}
+
+/* zoron */
+void xcb_backlight_set(xcb_connection_t *conn, xcb_randr_output_t output, long value)
+{
+    xcb_randr_change_output_property(conn, output, backlight, XCB_ATOM_INTEGER,
+				      32, XCB_PROP_MODE_REPLACE,
+				      1, (unsigned char *)&value);
+    xcb_flush(conn);
 }
